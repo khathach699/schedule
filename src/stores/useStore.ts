@@ -6,10 +6,9 @@ import type { Data } from "../model";
 
 const initial = storage.load();
 
-// Debounce push to Supabase cloud to avoid excessive requests
 let syncTimeout: any = null;
 function scheduleCloudSync(data: Data, setStatus: (status: "idle" | "syncing" | "synced" | "error") => void) {
-  if (!isSupabaseConfigured) return;
+  if (!isSupabaseConfigured()) return;
   clearTimeout(syncTimeout);
   setStatus("syncing");
   syncTimeout = setTimeout(async () => {
@@ -42,7 +41,7 @@ export const useStore = create<{
       }
     }),
   syncFromCloud: async () => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured()) return;
     set({ cloudStatus: "syncing" });
     const { data: cloudData, error } = await cloudSync.pull();
     if (cloudData) {
@@ -51,7 +50,6 @@ export const useStore = create<{
     } else if (error) {
       set({ cloudStatus: "error" });
     } else {
-      // First time cloud sync: push local data to cloud
       const res = await cloudSync.push(get().data);
       set({ cloudStatus: res.success ? "synced" : "error" });
     }

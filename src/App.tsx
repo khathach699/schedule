@@ -493,7 +493,7 @@ export default function App() {
             <b>{nav.find((n) => n.id === page)?.label}</b>
           </span>
           <div>
-            {isSupabaseConfigured ? (
+            {isSupabaseConfigured() ? (
               <span
                 className="local-badge"
                 title={

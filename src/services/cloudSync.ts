@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from "./supabase";
+import { getSupabaseClient, isSupabaseConfigured } from "./supabase";
 import type { Data } from "../model";
 import { dataSchema } from "../model";
 
@@ -18,7 +18,8 @@ export const cloudSync = {
    * Đẩy dữ liệu lên bảng `user_schedules` trên Supabase
    */
   async push(data: Data): Promise<{ success: boolean; error?: string }> {
-    if (!isSupabaseConfigured || !supabase) {
+    const supabase = getSupabaseClient();
+    if (!isSupabaseConfigured() || !supabase) {
       return { success: false, error: "Supabase chưa được cấu hình" };
     }
 
@@ -45,7 +46,8 @@ export const cloudSync = {
    * Kéo dữ liệu mới nhất từ Supabase
    */
   async pull(): Promise<{ data: Data | null; error?: string }> {
-    if (!isSupabaseConfigured || !supabase) {
+    const supabase = getSupabaseClient();
+    if (!isSupabaseConfigured() || !supabase) {
       return { data: null, error: "Supabase chưa được cấu hình" };
     }
 
