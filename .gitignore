@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.local
+.vercel/
+# Artifacts
+*.tsbuildinfo
+desktop-preview.png
+mobile-preview.png
+playwright-report/
+test-results/
