@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Download, Upload, ExternalLink } from "lucide-react";
+import { Download, Upload, ExternalLink, Cloud, RefreshCw } from "lucide-react";
 import { useStore } from "./stores/useStore";
 import { dayKey } from "./model";
 import { storage } from "./services/storage";
 import { defaultData } from "./data/defaultSchedule";
 import { Button } from "./components/ui/button";
 import { Dialog } from "./components/ui/dialog";
+import { isSupabaseConfigured } from "./services/supabase";
 export function Settings({
   onToast,
   onSchedule,
@@ -13,11 +14,12 @@ export function Settings({
   onToast: (s: string) => void;
   onSchedule: () => void;
 }) {
-  const { data, update } = useStore();
+  const { data, update, cloudStatus, syncFromCloud } = useStore();
   const [name, setName] = useState(data.settings.name);
   const [timezone, setTimezone] = useState(data.settings.timezone);
   const [goal, setGoal] = useState(data.settings.goal);
   const [reset, setReset] = useState("");
+  const [syncingNow, setSyncingNow] = useState(false);
   function exportData() {
     const blob = new Blob([JSON.stringify(data, null, 2)], {
       type: "application/json",
@@ -137,9 +139,52 @@ export function Settings({
           <section className="panel">
             <h2>Dữ liệu của bạn</h2>
             <p>
-              Dữ liệu được lưu riêng trên trình duyệt này. Xuất bản sao định kỳ
-              để giữ lại hành trình của bạn.
+              Dữ liệu được lưu an toàn trên trình duyệt và tự động đồng bộ đám mây qua Supabase.
             </p>
+            {isSupabaseConfigured() && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "12px 14px",
+                  borderRadius: 10,
+                  backgroundColor: "var(--hover)",
+                  marginBottom: 16,
+                  border: "1px solid var(--line)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <Cloud size={18} color="var(--primary)" />
+                  <div>
+                    <b style={{ display: "block", fontSize: 13 }}>Đồng bộ Supabase Cloud</b>
+                    <small style={{ color: "var(--muted)", fontSize: 11 }}>
+                      {cloudStatus === "syncing"
+                        ? "Đang đồng bộ..."
+                        : cloudStatus === "synced"
+                          ? "Đã đồng bộ mới nhất"
+                          : cloudStatus === "error"
+                            ? "Lỗi kết nối đồng bộ"
+                            : "Sẵn sàng kết nối"}
+                    </small>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  disabled={syncingNow || cloudStatus === "syncing"}
+                  onClick={async () => {
+                    setSyncingNow(true);
+                    await syncFromCloud();
+                    setSyncingNow(false);
+                    onToast("Đã đồng bộ với Supabase Cloud");
+                  }}
+                  style={{ minHeight: 32, padding: "4px 10px", fontSize: 12 }}
+                >
+                  <RefreshCw size={13} className={syncingNow ? "animate-spin" : ""} />
+                  Đồng bộ ngay
+                </Button>
+              </div>
+            )}
             <div className="data-actions">
               <Button variant="outline" onClick={exportData}>
                 <Download size={16} />
