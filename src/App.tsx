@@ -48,6 +48,7 @@ import { Button } from "./components/ui/button";
 import { Dialog } from "./components/ui/dialog";
 import { Focus } from "./Focus";
 import { adjustScheduleCascade } from "./scheduleHelper";
+import { isSupabaseConfigured } from "./services/supabase";
 const Statistics = lazy(() =>
   import("./Statistics").then((m) => ({ default: m.Statistics })),
 );
@@ -73,7 +74,7 @@ function addMinutes(time: string, n: number) {
   return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 export default function App() {
-  const { data, error, update } = useStore();
+  const { data, error, cloudStatus, update, syncFromCloud } = useStore();
   const [page, setPage] = useState("dashboard");
   const [now, setNow] = useState(new Date());
   const today = dayKey(now, data.settings.timezone);
@@ -94,6 +95,7 @@ export default function App() {
       update((d) => ({ ...d, history: { ...d.history, [today]: snapshot } }));
   }, [data.templates, data.overrides, today]);
   useEffect(() => {
+    syncFromCloud();
     const t = setInterval(() => setNow(new Date()), 10000);
     return () => clearInterval(t);
   }, []);
@@ -491,10 +493,43 @@ export default function App() {
             <b>{nav.find((n) => n.id === page)?.label}</b>
           </span>
           <div>
-            <span className="local-badge" title="Dữ liệu lưu trên thiết bị">
-              <i />
-              <span>Đã lưu trên thiết bị</span>
-            </span>
+            {isSupabaseConfigured ? (
+              <span
+                className="local-badge"
+                title={
+                  cloudStatus === "syncing"
+                    ? "Đang đồng bộ đám mây..."
+                    : cloudStatus === "synced"
+                      ? "Đã đồng bộ đám mây (Supabase)"
+                      : cloudStatus === "error"
+                        ? "Lỗi đồng bộ đám mây"
+                        : "Đồng bộ đám mây sẵn sàng"
+                }
+              >
+                <i
+                  style={{
+                    backgroundColor:
+                      cloudStatus === "syncing"
+                        ? "#f59e0b"
+                        : cloudStatus === "error"
+                          ? "#ef4444"
+                          : "#10b981",
+                  }}
+                />
+                <span>
+                  {cloudStatus === "syncing"
+                    ? "Đang đồng bộ..."
+                    : cloudStatus === "synced"
+                      ? "Đã đồng bộ Cloud"
+                      : "Cloud sẵn sàng"}
+                </span>
+              </span>
+            ) : (
+              <span className="local-badge" title="Dữ liệu lưu trên thiết bị">
+                <i />
+                <span>Đã lưu trên thiết bị</span>
+              </span>
+            )}
             <span className="clock" aria-label="Giờ hiện tại">
               {localTime}
             </span>
